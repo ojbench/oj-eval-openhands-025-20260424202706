@@ -1,0 +1,25 @@
+# Build artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.bak
+*.o
+*.d
+*.a
+*.so
+
+# Executables
+cheat
+anticheat
+eval
+code
+
+# Generated files
+*-submit.cpp
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
