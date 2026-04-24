@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "lang.h"
 #include "transform.h"
@@ -8,12 +9,14 @@
 class Cheat : public Transform {
  private:
   std::unordered_map<std::string, std::string> nameMap;
+  std::unordered_set<std::string> builtinFuncs;
   std::mt19937 rng;
   int counter = 0;
 
   std::string generateName() {
-    std::string name = "v";
+    std::string name = "x";
     int n = counter++;
+    if (n == 0) return name;
     while (n > 0) {
       name += char('a' + (n % 26));
       n /= 26;
@@ -23,6 +26,7 @@ class Cheat : public Transform {
 
   std::string getNewName(const std::string& oldName) {
     if (oldName == "main") return "main";
+    if (builtinFuncs.count(oldName)) return oldName;
     if (nameMap.find(oldName) == nameMap.end()) {
       nameMap[oldName] = generateName();
     }
@@ -30,7 +34,11 @@ class Cheat : public Transform {
   }
 
  public:
-  Cheat() : rng(42) {}
+  Cheat() : rng(42) {
+    builtinFuncs = {"+", "-", "*", "/", "%", "<", ">", "<=", ">=", "==", "!=", 
+                    "||", "&&", "!", "scan", "print", "array.create", "array.scan",
+                    "array.print", "array.get", "array.set"};
+  }
 
   Variable *transformVariable(Variable *node) override {
     return new Variable(getNewName(node->name));
@@ -49,15 +57,7 @@ class Cheat : public Transform {
     for (auto arg : node->args) {
       args.push_back(transformExpression(arg));
     }
-    std::string funcName = node->func;
-    if (funcName != "+" && funcName != "-" && funcName != "*" && funcName != "/" && funcName != "%" &&
-        funcName != "<" && funcName != ">" && funcName != "<=" && funcName != ">=" &&
-        funcName != "==" && funcName != "!=" && funcName != "||" && funcName != "&&" && funcName != "!" &&
-        funcName != "scan" && funcName != "print" && funcName != "array.create" && funcName != "array.scan" &&
-        funcName != "array.print" && funcName != "array.get" && funcName != "array.set") {
-      funcName = getNewName(funcName);
-    }
-    return new CallExpression(funcName, args);
+    return new CallExpression(getNewName(node->func), args);
   }
 
   Statement *transformBlockStatement(BlockStatement *node) override {
@@ -69,20 +69,7 @@ class Cheat : public Transform {
   }
 
   Expression *transformIntegerLiteral(IntegerLiteral *node) override {
-    if (node->value == 0 || node->value == 1) {
-      return new IntegerLiteral(node->value);
-    }
-    int choice = rng() % 3;
-    if (choice == 0) {
-      return new IntegerLiteral(node->value);
-    } else if (choice == 1 && node->value > 0) {
-      std::vector<Expression*> args;
-      args.push_back(new IntegerLiteral(node->value - 1));
-      args.push_back(new IntegerLiteral(1));
-      return new CallExpression("+", args);
-    } else {
-      return new IntegerLiteral(node->value);
-    }
+    return new IntegerLiteral(node->value);
   }
 };
 
